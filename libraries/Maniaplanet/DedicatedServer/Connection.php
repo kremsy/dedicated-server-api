@@ -142,7 +142,7 @@ class Connection
 	 * @param bool|callable $multicall True to queue the request or false to execute it immediately
 	 * @return mixed
 	 */
-	public function execute($methodName, $params=array(), $multicall=false)
+	protected function execute($methodName, $params=array(), $multicall=false)
 	{
 		if($multicall)
 		{
@@ -744,6 +744,24 @@ class Connection
 			throw new InvalidArgumentException('linkType = '.print_r($linkType, true));
 
 		return $this->execute(ucfirst(__FUNCTION__).'ToLogin', array($logins, $link, $linkType), $multicall);
+	}
+
+	/**
+	 * Prior to loading next map, execute SendToServer url '#qjoin=login@title'
+	 * Only available to Admin.
+	 * Available since ManiaPlanet 4
+	 * @param      $link
+	 * @param bool $multicall
+	 * @return bool
+	 * @throws InvalidArgumentException
+	 */
+	function sendToServerAfterMatchEnd($link, $multicall = false){
+		if(!is_string($link))
+			throw new InvalidArgumentException('link = '.print_r($link, true));
+
+		$link = str_replace("maniaplanet://", "", $link);
+
+		return $this->execute(ucfirst(__FUNCTION__), array($link), $multicall);
 	}
 
 	/**
@@ -2669,14 +2687,22 @@ class Connection
 	function triggerModeScriptEvent($event, $params='', $multicall=false)
 	{
 		if(!is_string($event))
-			throw new InvalidArgumentException('event = '.print_r($event, true));
+			throw new InvalidArgumentException('event name must be a string: event = '.print_r($event, true));
 
 		if(is_string($params))
 			return $this->execute(ucfirst(__FUNCTION__), array($event, $params), $multicall);
-		if(is_array($params))
+
+		if(is_array($params)){
+			foreach($params as $param){
+				if(!is_string($param)){
+					throw new InvalidArgumentException('argument must be a string: param = '.print_r($param, true));
+				}
+			}
 			return $this->execute(ucfirst(__FUNCTION__).'Array', array($event, $params), $multicall);
+		}
+
 		// else
-		throw new InvalidArgumentException('params = '.print_r($params, true));
+		throw new InvalidArgumentException('argument must be string or string[]: params = '.print_r($params, true));
 	}
 
 	/**
